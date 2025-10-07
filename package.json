@@ -1,0 +1,24 @@
+{
+  "name": "personal-task-manager",
+  "version": "1.0.0",
+  "description": "Personal Task Management Assistant",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd spring-boot-server && mvn spring-boot:run",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-deps": "npm install && cd client && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "keywords": [
+    "task-management",
+    "react",
+    "spring-boot",
+    "java",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC"
+}
