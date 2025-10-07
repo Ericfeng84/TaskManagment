@@ -1,8 +1,10 @@
 package com.taskmanager.model;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Table(name = "tasks")
@@ -34,6 +36,9 @@ public class Task {
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
@@ -42,6 +47,21 @@ public class Task {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // New fields for enhanced editing functionality
+    @Column(name = "version", nullable = false)
+    private Integer version = 1;
+
+    @Column(name = "last_edited_by")
+    private UUID lastEditedBy;
+
+    // Use JSON format to store tags collection
+    @Column(name = "tags", columnDefinition = "TEXT")
+    private String tags;
+
+    // Use JSON format to store custom fields
+    @Column(name = "custom_fields", columnDefinition = "TEXT")
+    private String customFields;
 
     // Relations
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,12 +76,16 @@ public class Task {
     @JoinColumn(name = "created_by", insertable = false, updatable = false)
     private User creator;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_edited_by", insertable = false, updatable = false)
+    private User lastEditor;
+
     // Constructors
     public Task() {
     }
 
-    public Task(String title, String description, TaskStatus status, Priority priority, 
-                UUID projectId, UUID assigneeId, UUID createdBy, LocalDateTime dueDate) {
+    public Task(String title, String description, TaskStatus status, Priority priority,
+                UUID projectId, UUID assigneeId, UUID createdBy, LocalDateTime startDate, LocalDateTime dueDate) {
         this.title = title;
         this.description = description;
         this.status = status;
@@ -69,6 +93,7 @@ public class Task {
         this.projectId = projectId;
         this.assigneeId = assigneeId;
         this.createdBy = createdBy;
+        this.startDate = startDate;
         this.dueDate = dueDate;
     }
 
@@ -82,6 +107,7 @@ public class Task {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        version += 1;
     }
 
     // Getters and Setters
@@ -149,6 +175,14 @@ public class Task {
         this.createdBy = createdBy;
     }
 
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDateTime startDate) {
+        this.startDate = startDate;
+    }
+
     public LocalDateTime getDueDate() {
         return dueDate;
     }
@@ -195,5 +229,85 @@ public class Task {
 
     public void setCreator(User creator) {
         this.creator = creator;
+    }
+
+    // New getters and setters for enhanced fields
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public UUID getLastEditedBy() {
+        return lastEditedBy;
+    }
+
+    public void setLastEditedBy(UUID lastEditedBy) {
+        this.lastEditedBy = lastEditedBy;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public String getCustomFields() {
+        return customFields;
+    }
+
+    public void setCustomFields(String customFields) {
+        this.customFields = customFields;
+    }
+
+    public User getLastEditor() {
+        return lastEditor;
+    }
+
+    public void setLastEditor(User lastEditor) {
+        this.lastEditor = lastEditor;
+    }
+
+    // Helper methods for tags and custom fields
+    public List<String> getTagsList() {
+        if (tags == null || tags.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return new ObjectMapper().readValue(tags, List.class);
+        } catch (JsonProcessingException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public void setTagsList(List<String> tagsList) {
+        try {
+            this.tags = new ObjectMapper().writeValueAsString(tagsList);
+        } catch (JsonProcessingException e) {
+            this.tags = "[]";
+        }
+    }
+
+    public Map<String, Object> getCustomFieldsMap() {
+        if (customFields == null || customFields.isEmpty()) {
+            return new HashMap<>();
+        }
+        try {
+            return new ObjectMapper().readValue(customFields, Map.class);
+        } catch (JsonProcessingException e) {
+            return new HashMap<>();
+        }
+    }
+
+    public void setCustomFieldsMap(Map<String, Object> customFieldsMap) {
+        try {
+            this.customFields = new ObjectMapper().writeValueAsString(customFieldsMap);
+        } catch (JsonProcessingException e) {
+            this.customFields = "{}";
+        }
     }
 }

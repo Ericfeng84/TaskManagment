@@ -8,25 +8,27 @@ graph TB
         A[React Frontend] --> B[React Router]
         A --> C[State Management]
         A --> D[Tailwind CSS]
-        A --> E[Socket.io Client]
     end
     
     subgraph "Server Side"
-        F[Express.js API] --> G[JWT Authentication]
-        F --> H[Socket.io Server]
-        F --> I[API Controllers]
-        F --> J[Middleware]
+        F[Spring Boot API] --> G[Spring Security]
+        F --> I[Controllers]
+        F --> J[Services]
+        F --> K[Repositories]
+        F --> L[JWT Filter]
     end
     
     subgraph "Data Layer"
-        K[PostgreSQL Database]
-        L[Prisma ORM]
+        M[PostgreSQL Database]
+        N[Spring Data JPA]
     end
     
     A --> F
-    I --> L
-    L --> K
-    H --> E
+    I --> J
+    J --> K
+    K --> N
+    N --> M
+    L --> G
 ```
 
 ## User Flow Diagram
@@ -45,7 +47,7 @@ flowchart TD
     I --> J[Create/Update Task]
     J --> K[Assign Task]
     K --> L[Update Status]
-    L --> M[Real-time Updates]
+    L --> M[UI Updates]
 ```
 
 ## Database Relationship Diagram
@@ -65,8 +67,8 @@ erDiagram
         string password
         string name
         string avatar
-        timestamp createdAt
-        timestamp updatedAt
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
     }
     
     Projects {
@@ -74,8 +76,8 @@ erDiagram
         string name
         string description
         uuid ownerId FK
-        timestamp createdAt
-        timestamp updatedAt
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
     }
     
     Tasks {
@@ -88,8 +90,8 @@ erDiagram
         uuid assigneeId FK
         uuid createdBy FK
         timestamp dueDate
-        timestamp createdAt
-        timestamp updatedAt
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
     }
     
     ProjectMembers {
@@ -139,43 +141,46 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant A as API Gateway
-    participant M as Middleware
+    participant F as JWT Filter
     participant Ctrl as Controller
     participant S as Service
+    participant R as Repository
     participant DB as Database
     
-    C->>A: HTTP Request
-    A->>M: Authentication Check
-    M->>M: Validate JWT Token
-    M->>Ctrl: Forward Request
+    C->>F: HTTP Request with JWT
+    F->>F: Validate JWT Token
+    F->>Ctrl: Forward Request
     Ctrl->>S: Business Logic
-    S->>DB: Query/Update Data
-    DB-->>S: Response
+    S->>R: Data Access
+    R->>DB: Query/Update Data
+    DB-->>R: Response
+    R-->>S: Entity Data
     S-->>Ctrl: Processed Data
-    Ctrl-->>A: Formatted Response
-    A-->>C: HTTP Response
+    Ctrl-->>C: HTTP Response
 ```
 
-## Real-time Update Flow
+## Data Update Flow
 
 ```mermaid
 sequenceDiagram
     participant U1 as User 1
     participant C1 as Client 1
-    participant S as Socket Server
+    participant API as Spring Boot API
     participant DB as Database
     participant C2 as Client 2
     participant U2 as User 2
     
     U1->>C1: Update Task Status
-    C1->>S: Socket Event: task:update
-    S->>DB: Update Task
-    DB-->>S: Confirmation
-    S->>C2: Broadcast: task:updated
-    C2->>U2: UI Update
-    S-->>C1: Acknowledgment
+    C1->>API: PUT /api/tasks/{id}
+    API->>DB: Update Task
+    DB-->>API: Confirmation
+    API-->>C1: Updated Task Data
     C1->>U1: UI Update
+    
+    Note over C2,U2: Client 2 polls for updates or refreshes
+    C2->>API: GET /api/tasks/projects/{projectId}
+    API-->>C2: Updated Task List
+    C2->>U2: UI Update
 ```
 
 ## Authentication Flow
@@ -184,18 +189,24 @@ sequenceDiagram
 sequenceDiagram
     participant U as User
     participant C as Client
-    participant A as Auth API
+    participant A as Auth Controller
+    participant S as Auth Service
     participant DB as Database
     
     U->>C: Login Credentials
     C->>A: POST /api/auth/login
-    A->>DB: Verify User
-    DB-->>A: User Data
-    A->>A: Generate JWT
+    A->>S: Authenticate User
+    S->>DB: Verify User
+    DB-->>S: User Entity
+    S->>S: Generate JWT
+    S-->>A: Auth Response with JWT
     A-->>C: JWT Token
     C->>C: Store Token
+    
+    Note over C,DB: Subsequent Request Flow
     C->>A: Protected Request + JWT
-    A->>A: Validate JWT
+    A->>A: JWT Filter validates token
+    A->>A: Set Security Context
     A-->>C: Protected Resource
 ```
 
@@ -205,7 +216,7 @@ sequenceDiagram
 graph LR
     subgraph "Root Directory"
         A[client/] --> B[React Frontend]
-        C[server/] --> D[Node.js Backend]
+        C[spring-boot-server/] --> D[Spring Boot Backend]
         E[docs/] --> F[Documentation]
         G[.gitignore]
         H[README.md]
@@ -221,12 +232,15 @@ graph LR
         I --> O[types/]
     end
     
-    subgraph "Server Structure"
-        D --> P[src/]
+    subgraph "Spring Boot Structure"
+        D --> P[src/main/java/com/taskmanager/]
         P --> Q[controllers/]
-        P --> R[middleware/]
-        P --> S[routes/]
-        P --> T[services/]
-        D --> U[prisma/]
-        D --> V[.env]
+        P --> R[services/]
+        P --> S[repositories/]
+        P --> T[model/]
+        P --> U[dto/]
+        P --> V[security/]
+        D --> W[src/main/resources/]
+        W --> X[application.properties]
+        D --> Y[pom.xml]
     end

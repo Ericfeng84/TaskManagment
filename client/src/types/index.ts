@@ -40,9 +40,59 @@ export interface Task {
   assignee?: User;
   createdBy: string;
   creator: User;
+  lastEditedBy?: string;
+  lastEditor?: User;
+  startDate?: string;
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
+  version?: number;
+  tags?: string[];
+  customFields?: Record<string, any>;
+}
+
+export interface TaskPatch {
+  title?: string;
+  description?: string;
+  status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
+  assigneeId?: string;
+  startDate?: string;
+  dueDate?: string;
+  tags?: string[];
+  customFields?: Record<string, any>;
+}
+
+export interface TaskHistory {
+  id: string;
+  taskId: string;
+  fieldName: string;
+  oldValue?: string;
+  newValue?: string;
+  changedBy: string;
+  changedByUser?: User;
+  changeType: 'CREATE' | 'UPDATE' | 'DELETE' | 'STATUS_CHANGE' | 'ASSIGNMENT_CHANGE' | 'PRIORITY_CHANGE' | 'DUE_DATE_CHANGE' | 'COMMENT_ADDED' | 'ATTACHMENT_ADDED' | 'SUBTASK_ADDED' | 'DEPENDENCY_ADDED';
+  changedAt: string;
+  description?: string;
+}
+
+export interface BulkUpdateRequest {
+  taskIds: string[];
+  updates: TaskPatch;
+}
+
+export interface BulkUpdateResponse {
+  successfulUpdates: string[];
+  failedUpdates: BulkUpdateError[];
+  totalRequested: number;
+  totalSuccessful: number;
+  totalFailed: number;
+}
+
+export interface BulkUpdateError {
+  taskId: string;
+  errorMessage: string;
+  errorCode: string;
 }
 
 export interface AuthState {

@@ -11,13 +11,23 @@ interface DroppableColumnProps {
   status: string;
   tasks: Task[];
   onUpdateTaskStatus: (taskId: string, newStatus: string) => void;
+  onUpdateTask?: (updatedTask: Task) => void;
+  availableUsers?: any[];
+  bulkMode?: boolean;
+  selectedTasks?: Task[];
+  onTaskSelection?: (task: Task, isSelected: boolean) => void;
 }
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ 
-  title, 
-  status, 
-  tasks, 
-  onUpdateTaskStatus 
+const DroppableColumn: React.FC<DroppableColumnProps> = ({
+  title,
+  status,
+  tasks,
+  onUpdateTaskStatus,
+  onUpdateTask = () => {},
+  availableUsers = [],
+  bulkMode = false,
+  selectedTasks = [],
+  onTaskSelection = () => {}
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -54,6 +64,11 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
               key={task.id}
               task={task}
               onUpdateStatus={onUpdateTaskStatus}
+              onUpdateTask={onUpdateTask}
+              availableUsers={availableUsers}
+              bulkMode={bulkMode}
+              isSelected={selectedTasks.some(t => t.id === task.id)}
+              onSelectionChange={(isSelected) => onTaskSelection(task, isSelected)}
             />
           ))}
         </SortableContext>

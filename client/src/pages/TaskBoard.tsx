@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Project, Task } from '../types';
+import { Project, Task, User } from '../types';
 import { projectsAPI, tasksAPI } from '../services/api';
 import TaskCard from '../components/TaskCard';
 import DroppableColumn from '../components/DroppableColumn';
+import BulkTaskEditor from '../components/BulkTaskEditor';
 import {
   DndContext,
   DragEndEvent,
@@ -20,11 +21,21 @@ const TaskBoard: React.FC = () => {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projectMembers, setProjectMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '' });
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    startDate: '',
+    dueDate: '',
+    assigneeId: ''
+  });
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
+  const [showBulkEditor, setShowBulkEditor] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -41,7 +52,11 @@ const TaskBoard: React.FC = () => {
       try {
         const projectResponse = await projectsAPI.getProject(id);
         setProject(projectResponse.data);
-        
+
+        // Extract project members
+        const members = projectResponse.data.members.map((member: any) => member.user);
+        setProjectMembers(members);
+
         const tasksResponse = await tasksAPI.getTasks(id);
         setTasks(tasksResponse.data);
       } catch (error: any) {
@@ -57,16 +72,27 @@ const TaskBoard: React.FC = () => {
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
-    
+
     try {
-      const response = await tasksAPI.createTask(id, {
+      const taskData = {
         title: newTask.title,
         description: newTask.description,
-        priority: 'MEDIUM'
-      });
-      
+        priority: 'MEDIUM',
+        startDate: newTask.startDate ? new Date(newTask.startDate).toISOString() : null,
+        dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
+        assigneeId: newTask.assigneeId || null
+      };
+
+      const response = await tasksAPI.createTask(id, taskData);
+
       setTasks([...tasks, response.data]);
-      setNewTask({ title: '', description: '' });
+      setNewTask({
+        title: '',
+        description: '',
+        startDate: '',
+        dueDate: '',
+        assigneeId: ''
+      });
       setShowCreateTask(false);
     } catch (error: any) {
       setError(error.response?.data?.error || 'Failed to create task');
@@ -81,12 +107,44 @@ const TaskBoard: React.FC = () => {
           status: newStatus,
           priority: task.priority,
           title: task.title,
-          description: task.description
+          description: task.description,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+          assigneeId: task.assigneeId
         });
         setTasks(tasks.map(task => task.id === taskId ? response.data : task));
       }
     } catch (error: any) {
       setError(error.response?.data?.error || 'Failed to update task');
+    }
+  };
+
+  const handleUpdateTask = (updatedTask: Task) => {
+    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+  };
+
+  const handleBulkUpdateTasks = (updatedTasks: Task[]) => {
+    setTasks(tasks.map(task => {
+      const updatedTask = updatedTasks.find(ut => ut.id === task.id);
+      return updatedTask || task;
+    }));
+    setSelectedTasks([]);
+    setShowBulkEditor(false);
+  };
+
+  const handleTaskSelection = (task: Task, isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedTasks([...selectedTasks, task]);
+    } else {
+      setSelectedTasks(selectedTasks.filter(t => t.id !== task.id));
+    }
+  };
+
+  const handleSelectAllTasks = () => {
+    if (selectedTasks.length === tasks.length) {
+      setSelectedTasks([]);
+    } else {
+      setSelectedTasks([...tasks]);
     }
   };
 
@@ -135,7 +193,10 @@ const TaskBoard: React.FC = () => {
           status: newStatus,
           priority: task.priority,
           title: task.title,
-          description: task.description
+          description: task.description,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+          assigneeId: task.assigneeId
         });
         setTasks(tasks.map(t => t.id === taskId ? response.data : t));
       } catch (error: any) {
@@ -191,6 +252,30 @@ const TaskBoard: React.FC = () => {
                 Add Task
               </button>
               <button
+                onClick={() => setBulkMode(!bulkMode)}
+                className={`${bulkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white font-medium py-2 px-4 rounded`}
+              >
+                {bulkMode ? '退出批量选择' : '批量选择'}
+              </button>
+              {bulkMode && (
+                <>
+                  <button
+                    onClick={handleSelectAllTasks}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded"
+                  >
+                    {selectedTasks.length === tasks.length ? '取消全选' : '全选'}
+                  </button>
+                  {selectedTasks.length > 0 && (
+                    <button
+                      onClick={() => setShowBulkEditor(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded"
+                    >
+                      批量编辑 ({selectedTasks.length})
+                    </button>
+                  )}
+                </>
+              )}
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded"
               >
@@ -222,6 +307,11 @@ const TaskBoard: React.FC = () => {
                 status="TODO"
                 tasks={getTasksByStatus('TODO')}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                onUpdateTask={handleUpdateTask}
+                availableUsers={projectMembers}
+                bulkMode={bulkMode}
+                selectedTasks={selectedTasks}
+                onTaskSelection={handleTaskSelection}
               />
 
               {/* In Progress Column */}
@@ -230,6 +320,11 @@ const TaskBoard: React.FC = () => {
                 status="IN_PROGRESS"
                 tasks={getTasksByStatus('IN_PROGRESS')}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                onUpdateTask={handleUpdateTask}
+                availableUsers={projectMembers}
+                bulkMode={bulkMode}
+                selectedTasks={selectedTasks}
+                onTaskSelection={handleTaskSelection}
               />
 
               {/* Done Column */}
@@ -238,6 +333,11 @@ const TaskBoard: React.FC = () => {
                 status="DONE"
                 tasks={getTasksByStatus('DONE')}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                onUpdateTask={handleUpdateTask}
+                availableUsers={projectMembers}
+                bulkMode={bulkMode}
+                selectedTasks={selectedTasks}
+                onTaskSelection={handleTaskSelection}
               />
             </div>
             
@@ -246,6 +346,8 @@ const TaskBoard: React.FC = () => {
                 <TaskCard
                   task={activeTask}
                   onUpdateStatus={() => {}}
+                  onUpdateTask={handleUpdateTask}
+                  availableUsers={projectMembers}
                 />
               ) : null}
             </DragOverlay>
@@ -282,6 +384,50 @@ const TaskBoard: React.FC = () => {
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                 />
               </div>
+
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  分配给
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  value={newTask.assigneeId}
+                  onChange={(e) => setNewTask({ ...newTask, assigneeId: e.target.value })}
+                >
+                  <option value="">选择处理人</option>
+                  {projectMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    开始日期
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={newTask.startDate}
+                    onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    截止日期
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                    min={newTask.startDate}
+                  />
+                </div>
+              </div>
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
@@ -300,6 +446,16 @@ const TaskBoard: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      
+      {/* 批量编辑器 */}
+      {showBulkEditor && (
+        <BulkTaskEditor
+          selectedTasks={selectedTasks}
+          onUpdate={handleBulkUpdateTasks}
+          onCancel={() => setShowBulkEditor(false)}
+          availableUsers={projectMembers}
+        />
       )}
     </div>
   );

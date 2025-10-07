@@ -62,6 +62,15 @@ export const tasksAPI = {
   updateTask: (id: string, taskData: any) =>
     api.put(`/tasks/${id}`, taskData),
 
+  patchTask: (id: string, patchData: any) =>
+    api.patch(`/tasks/${id}`, patchData),
+
+  bulkUpdateTasks: (bulkUpdateData: any) =>
+    api.post(`/tasks/bulk-update`, bulkUpdateData),
+
+  getTaskHistory: (id: string) =>
+    api.get(`/tasks/${id}/history`),
+
   deleteTask: (id: string) =>
     api.delete(`/tasks/${id}`),
 };
