@@ -55,10 +55,76 @@ public class ProjectService {
                 projectDTO.setOwner(ownerDTO);
             }
 
-            // Set task count
-            int taskCount = taskRepository.findByProjectIdOrderByCreatedAtDesc(project.getId()).size();
-            ProjectDTO.TaskCountDTO taskCountDTO = new ProjectDTO.TaskCountDTO(taskCount);
-            projectDTO.set_count(taskCountDTO);
+            // Set members with their avatars
+            List<ProjectMember> members = projectMemberRepository.findByProjectId(project.getId());
+            List<ProjectMemberDTO> memberDTOs = members.stream().map(member -> {
+                ProjectMemberDTO memberDTO = new ProjectMemberDTO();
+                memberDTO.setId(member.getId());
+                memberDTO.setProjectId(member.getProjectId());
+                memberDTO.setUserId(member.getUserId());
+                memberDTO.setRole(member.getRole());
+                memberDTO.setJoinedAt(member.getJoinedAt());
+
+                User user = userRepository.findById(member.getUserId()).orElse(null);
+                if (user != null) {
+                    UserDTO userDTO = new UserDTO(
+                            user.getId(),
+                            user.getEmail(),
+                            user.getName(),
+                            user.getAvatar()
+                    );
+                    memberDTO.setUser(userDTO);
+                }
+
+                return memberDTO;
+            }).collect(Collectors.toList());
+            projectDTO.setMembers(memberDTOs);
+
+            // Set tasks
+            List<Task> tasks = taskRepository.findByProjectIdOrderByCreatedAtDesc(project.getId());
+            List<TaskDTO> taskDTOs = tasks.stream().map(task -> {
+                TaskDTO taskDTO = new TaskDTO();
+                taskDTO.setId(task.getId());
+                taskDTO.setTitle(task.getTitle());
+                taskDTO.setDescription(task.getDescription());
+                taskDTO.setStatus(task.getStatus());
+                taskDTO.setPriority(task.getPriority());
+                taskDTO.setProjectId(task.getProjectId());
+                taskDTO.setAssigneeId(task.getAssigneeId());
+                taskDTO.setCreatedBy(task.getCreatedBy());
+                taskDTO.setDueDate(task.getDueDate());
+                taskDTO.setCreatedAt(task.getCreatedAt());
+                taskDTO.setUpdatedAt(task.getUpdatedAt());
+
+                // Set assignee
+                if (task.getAssigneeId() != null) {
+                    User assignee = userRepository.findById(task.getAssigneeId()).orElse(null);
+                    if (assignee != null) {
+                        UserDTO assigneeDTO = new UserDTO(
+                                assignee.getId(),
+                                assignee.getEmail(),
+                                assignee.getName(),
+                                assignee.getAvatar()
+                        );
+                        taskDTO.setAssignee(assigneeDTO);
+                    }
+                }
+
+                // Set creator
+                User creator = userRepository.findById(task.getCreatedBy()).orElse(null);
+                if (creator != null) {
+                    UserDTO creatorDTO = new UserDTO(
+                            creator.getId(),
+                            creator.getEmail(),
+                            creator.getName(),
+                            creator.getAvatar()
+                    );
+                    taskDTO.setCreator(creatorDTO);
+                }
+
+                return taskDTO;
+            }).collect(Collectors.toList());
+            projectDTO.setTasks(taskDTOs);
 
             return projectDTO;
         }).collect(Collectors.toList());

@@ -14,7 +14,6 @@ public class ProjectDTO {
     private UserDTO owner;
     private List<ProjectMemberDTO> members;
     private List<TaskDTO> tasks;
-    private TaskCountDTO _count;
 
     public ProjectDTO() {
     }
@@ -91,30 +90,4 @@ public class ProjectDTO {
         this.tasks = tasks;
     }
 
-    public TaskCountDTO get_count() {
-        return _count;
-    }
-
-    public void set_count(TaskCountDTO _count) {
-        this._count = _count;
-    }
-
-    public static class TaskCountDTO {
-        private int tasks;
-
-        public TaskCountDTO() {
-        }
-
-        public TaskCountDTO(int tasks) {
-            this.tasks = tasks;
-        }
-
-        public int getTasks() {
-            return tasks;
-        }
-
-        public void setTasks(int tasks) {
-            this.tasks = tasks;
-        }
-    }
 }

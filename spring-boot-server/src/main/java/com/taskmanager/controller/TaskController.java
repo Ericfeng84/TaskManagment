@@ -52,6 +52,8 @@ public class TaskController {
             String description = (String) request.get("description");
             Priority priority = request.get("priority") != null ?
                 Priority.valueOf((String) request.get("priority")) : Priority.MEDIUM;
+            TaskStatus status = request.get("status") != null ?
+                TaskStatus.valueOf((String) request.get("status")) : TaskStatus.TODO;
             UUID assigneeId = request.get("assigneeId") != null ?
                 UUID.fromString((String) request.get("assigneeId")) : null;
             LocalDateTime startDate = request.get("startDate") != null ?
@@ -59,7 +61,7 @@ public class TaskController {
             LocalDateTime dueDate = request.get("dueDate") != null ?
                 parseDateTime((String) request.get("dueDate")) : null;
 
-            TaskDTO task = taskService.createTask(projectId, title, description, priority, assigneeId, userId, startDate, dueDate, userId);
+            TaskDTO task = taskService.createTask(projectId, title, description, priority, status, assigneeId, userId, startDate, dueDate, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(task);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();

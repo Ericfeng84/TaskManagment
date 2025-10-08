@@ -28,6 +28,7 @@ const TaskBoard: React.FC = () => {
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
+    status: 'TODO',
     startDate: '',
     dueDate: '',
     assigneeId: ''
@@ -69,6 +70,18 @@ const TaskBoard: React.FC = () => {
     fetchData();
   }, [id]);
 
+  const handleAddTask = (status: string) => {
+    setNewTask({
+      title: '',
+      description: '',
+      status: status,
+      startDate: '',
+      dueDate: '',
+      assigneeId: ''
+    });
+    setShowCreateTask(true);
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
@@ -78,6 +91,7 @@ const TaskBoard: React.FC = () => {
         title: newTask.title,
         description: newTask.description,
         priority: 'MEDIUM',
+        status: newTask.status,
         startDate: newTask.startDate ? new Date(newTask.startDate).toISOString() : null,
         dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
         assigneeId: newTask.assigneeId || null
@@ -89,6 +103,7 @@ const TaskBoard: React.FC = () => {
       setNewTask({
         title: '',
         description: '',
+        status: 'TODO',
         startDate: '',
         dueDate: '',
         assigneeId: ''
@@ -234,26 +249,25 @@ const TaskBoard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-              {project.description && (
-                <p className="text-gray-600 mt-1">{project.description}</p>
-              )}
-            </div>
-            <div className="flex space-x-4">
+            <div className="flex items-center space-x-4">
               <button
-                onClick={() => setShowCreateTask(true)}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded"
+                onClick={() => navigate('/dashboard')}
+                className="text-gray-500 hover:text-gray-700"
               >
-                Add Task
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
+              <h1 className="text-2xl font-semibold text-gray-800">{project.name}</h1>
+            </div>
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => setBulkMode(!bulkMode)}
-                className={`${bulkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white font-medium py-2 px-4 rounded`}
+                className={`${bulkMode ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'} font-medium py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors`}
               >
                 {bulkMode ? '退出批量选择' : '批量选择'}
               </button>
@@ -261,14 +275,14 @@ const TaskBoard: React.FC = () => {
                 <>
                   <button
                     onClick={handleSelectAllTasks}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded"
+                    className="bg-gray-100 text-gray-600 font-medium py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     {selectedTasks.length === tasks.length ? '取消全选' : '全选'}
                   </button>
                   {selectedTasks.length > 0 && (
                     <button
                       onClick={() => setShowBulkEditor(true)}
-                      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded"
+                      className="bg-green-100 text-green-700 font-medium py-2 px-4 rounded-lg hover:bg-green-200 transition-colors"
                     >
                       批量编辑 ({selectedTasks.length})
                     </button>
@@ -276,20 +290,23 @@ const TaskBoard: React.FC = () => {
                 </>
               )}
               <button
-                onClick={() => navigate('/dashboard')}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded"
+                onClick={() => handleAddTask('TODO')}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg flex items-center"
               >
-                Back to Dashboard
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                添加任务
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-0">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
               {error}
             </div>
           )}
@@ -300,10 +317,10 @@ const TaskBoard: React.FC = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Todo Column */}
               <DroppableColumn
-                title="To Do"
+                title="待办事项"
                 status="TODO"
                 tasks={getTasksByStatus('TODO')}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
@@ -312,11 +329,12 @@ const TaskBoard: React.FC = () => {
                 bulkMode={bulkMode}
                 selectedTasks={selectedTasks}
                 onTaskSelection={handleTaskSelection}
+                onAddTask={handleAddTask}
               />
 
               {/* In Progress Column */}
               <DroppableColumn
-                title="In Progress"
+                title="进行中"
                 status="IN_PROGRESS"
                 tasks={getTasksByStatus('IN_PROGRESS')}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
@@ -325,11 +343,12 @@ const TaskBoard: React.FC = () => {
                 bulkMode={bulkMode}
                 selectedTasks={selectedTasks}
                 onTaskSelection={handleTaskSelection}
+                onAddTask={handleAddTask}
               />
 
               {/* Done Column */}
               <DroppableColumn
-                title="Done"
+                title="已完成"
                 status="DONE"
                 tasks={getTasksByStatus('DONE')}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
@@ -338,6 +357,7 @@ const TaskBoard: React.FC = () => {
                 bulkMode={bulkMode}
                 selectedTasks={selectedTasks}
                 onTaskSelection={handleTaskSelection}
+                onAddTask={handleAddTask}
               />
             </div>
             
@@ -385,22 +405,38 @@ const TaskBoard: React.FC = () => {
                 />
               </div>
 
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  分配给
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  value={newTask.assigneeId}
-                  onChange={(e) => setNewTask({ ...newTask, assigneeId: e.target.value })}
-                >
-                  <option value="">选择处理人</option>
-                  {projectMembers.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    分配给
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={newTask.assigneeId}
+                    onChange={(e) => setNewTask({ ...newTask, assigneeId: e.target.value })}
+                  >
+                    <option value="">选择处理人</option>
+                    {projectMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={newTask.status}
+                    onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
+                  >
+                    <option value="TODO">待办事项</option>
+                    <option value="IN_PROGRESS">进行中</option>
+                    <option value="DONE">已完成</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">

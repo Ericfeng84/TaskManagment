@@ -16,6 +16,46 @@ interface TaskCardProps {
   onSelectionChange?: (isSelected: boolean) => void;
 }
 
+const PriorityTag: React.FC<{ priority: string }> = ({ priority }) => {
+  const getPriorityStyles = () => {
+    switch (priority) {
+      case 'HIGH':
+        return {
+          tag: 'bg-red-100 text-red-800',
+          text: '高',
+          icon: '🚩'
+        };
+      case 'MEDIUM':
+        return {
+          tag: 'bg-yellow-100 text-yellow-800',
+          text: '中',
+          icon: '🚩'
+        };
+      case 'LOW':
+        return {
+          tag: 'bg-green-100 text-green-800',
+          text: '低',
+          icon: '🚩'
+        };
+      default:
+        return {
+          tag: 'bg-gray-100 text-gray-800',
+          text: '未定',
+          icon: '🚩'
+        };
+    }
+  };
+
+  const { tag, text, icon } = getPriorityStyles();
+
+  return (
+    <div className={`flex items-center px-2 py-1 rounded-md text-xs font-medium ${tag}`}>
+      <span>{icon}</span>
+      <span className="ml-1">{text}</span>
+    </div>
+  );
+};
+
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
   onUpdateStatus,
@@ -41,121 +81,58 @@ const TaskCard: React.FC<TaskCardProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'TODO':
-        return 'bg-gray-50';
-      case 'IN_PROGRESS':
-        return 'bg-blue-50';
-      case 'DONE':
-        return 'bg-green-50';
-      default:
-        return 'bg-gray-50';
-    }
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-  };
-
-  const isOverdue = (dueDate?: string) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date() && task.status !== 'DONE';
-  };
-
   return (
     <>
       <div
         ref={setNodeRef}
         style={style}
-        className={`${getStatusColor(task.status)} p-4 rounded-lg ${bulkMode ? 'cursor-pointer' : 'cursor-move'} shadow-sm hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+        className={`relative bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-shadow ${bulkMode ? 'cursor-pointer' : 'cursor-move'} ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
         {...(bulkMode ? {} : attributes)}
         {...(bulkMode ? {} : listeners)}
         onClick={bulkMode ? () => onSelectionChange(!isSelected) : undefined}
       >
-        {bulkMode && (
-          <div className="absolute top-2 left-2">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => onSelectionChange(!isSelected)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
-        <h3 className="font-medium text-gray-900">{task.title}</h3>
-        {task.description && (
-          <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-        )}
-
-        {/* Dates and Assignee Section */}
-        <div className="mt-3 space-y-2">
-          {/* Assignee */}
-          {task.assignee && (
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-gray-600">
-                  {task.assignee.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <span className="text-xs text-gray-600 truncate">{task.assignee.name}</span>
-            </div>
-          )}
-
-          {/* Dates */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center space-x-2">
-              {task.startDate && (
-                <div className="flex items-center space-x-1">
-                  <span className="text-gray-400">📅</span>
-                  <span className="text-gray-500">开始: {formatDate(task.startDate)}</span>
-                </div>
-              )}
-            </div>
-            {task.dueDate && (
-              <div className={`flex items-center space-x-1 ${isOverdue(task.dueDate) ? 'text-red-500' : 'text-gray-500'}`}>
-                <span className={isOverdue(task.dueDate) ? 'text-red-400' : 'text-gray-400'}>⏰</span>
-                <span>截止: {formatDate(task.dueDate)}</span>
-              </div>
-            )}
-          </div>
+        {/* Checkbox for bulk mode */}
+        <div className="absolute top-3 right-3">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onSelectionChange(!isSelected)}
+            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
 
-        {/* Priority and Status */}
-        <div className="mt-3 flex justify-between">
-          <span className="text-xs text-gray-500">
-            {task.priority} priority
-          </span>
-          <div className="flex space-x-2">
-            {!bulkMode && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEditor(true);
-                }}
-                className="text-xs text-blue-500 hover:text-blue-700"
-              >
-                编辑
-              </button>
-            )}
-            <select
-              value={task.status}
-              onChange={(e) => onUpdateStatus(task.id, e.target.value)}
-              className="text-xs border border-gray-300 rounded px-2 py-1"
-              onClick={(e) => e.stopPropagation()} // Prevent drag when clicking select
+        {/* Task Title and Description */}
+        <div className="pr-8">
+          <h3 className="font-semibold text-gray-800">{task.title}</h3>
+          {task.description && (
+            <p className="text-sm text-gray-500 mt-1">{task.description}</p>
+          )}
+        </div>
+
+        {/* Priority and Edit button */}
+        <div className="mt-4 flex justify-between items-center">
+          <PriorityTag priority={task.priority} />
+          
+          {!bulkMode && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEditor(true);
+              }}
+              className="text-gray-400 hover:text-gray-600"
+              aria-label="Edit task"
             >
-              <option value="TODO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="DONE">Done</option>
-            </select>
-          </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
       
-      {/* 任务编辑器 */}
+      {/* Task Editor Modal */}
       {showEditor && (
         <TaskEditor
           task={task}

@@ -102,8 +102,8 @@ public class TaskService {
         }).collect(Collectors.toList());
     }
 
-    public TaskDTO createTask(UUID projectId, String title, String description, Priority priority,
-                             UUID assigneeId, UUID createdBy, java.time.LocalDateTime startDate, java.time.LocalDateTime dueDate, UUID userId) {
+    public TaskDTO createTask(UUID projectId, String title, String description, Priority priority, TaskStatus status,
+                              UUID assigneeId, UUID createdBy, java.time.LocalDateTime startDate, java.time.LocalDateTime dueDate, UUID userId) {
         // Check if user has access to the project
         if (!projectRepository.findUserProjectById(projectId, userId).isPresent()) {
             throw new RuntimeException("Project not found or access denied.");
@@ -112,7 +112,7 @@ public class TaskService {
         Task task = new Task();
         task.setTitle(title);
         task.setDescription(description);
-        task.setStatus(TaskStatus.TODO);
+        task.setStatus(status != null ? status : TaskStatus.TODO);
         task.setPriority(priority != null ? priority : Priority.MEDIUM);
         task.setProjectId(projectId);
         task.setAssigneeId(assigneeId);
